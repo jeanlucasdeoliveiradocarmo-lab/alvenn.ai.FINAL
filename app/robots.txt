@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://alvenn.ai/sitemap.xml
+Host: https://alvenn.ai
