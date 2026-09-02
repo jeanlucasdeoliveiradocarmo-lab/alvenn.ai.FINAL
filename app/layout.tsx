@@ -17,11 +17,14 @@ const firaCode = Fira_Code({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+
   title: {
     default: SITE_TITLE,
     template: '%s | Alvenn.ai',
   },
+
   description: SITE_DESCRIPTION,
+
   keywords: [
     'Alvenn.ai',
     'criação de sites',
@@ -34,16 +37,26 @@ export const metadata: Metadata = {
     'SEO técnico',
     'presença digital',
   ],
-  authors: [{ name: 'Alvenn.ai', url: SITE_URL }],
+
+  authors: [
+    {
+      name: 'Alvenn.ai',
+      url: SITE_URL,
+    },
+  ],
+
   creator: 'Alvenn.ai',
   publisher: 'Alvenn.ai',
   category: 'technology',
+
   alternates: {
     canonical: SITE_URL,
   },
+
   robots: {
     index: true,
     follow: true,
+
     googleBot: {
       index: true,
       follow: true,
@@ -52,6 +65,7 @@ export const metadata: Metadata = {
       'max-video-preview': -1,
     },
   },
+
   openGraph: {
     type: 'website',
     locale: 'pt_BR',
@@ -59,6 +73,7 @@ export const metadata: Metadata = {
     siteName: 'Alvenn.ai',
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
+
     images: [
       {
         url: '/alvenn-logo.png',
@@ -68,14 +83,25 @@ export const metadata: Metadata = {
       },
     ],
   },
+
   twitter: {
     card: 'summary_large_image',
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     images: ['/alvenn-logo.png'],
   },
+
   icons: {
-    icon: '/favicon.svg',
+    icon: [
+      {
+        url: '/icon.png',
+        type: 'image/png',
+        sizes: '512x512',
+      },
+    ],
+
+    shortcut: '/icon.png',
+    apple: '/icon.png',
   },
 };
 
@@ -101,14 +127,22 @@ export default function RootLayout({
         {googleAnalyticsId ? (
           <>
             <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(googleAnalyticsId)}`}
+              src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(
+                googleAnalyticsId,
+              )}`}
               strategy="afterInteractive"
             />
+
             <Script id="google-analytics" strategy="afterInteractive">
               {`
                 window.dataLayer = window.dataLayer || [];
-                function gtag(){window.dataLayer.push(arguments);}
+
+                function gtag() {
+                  window.dataLayer.push(arguments);
+                }
+
                 gtag('js', new Date());
+
                 gtag('config', ${JSON.stringify(googleAnalyticsId)}, {
                   anonymize_ip: true,
                   page_path: window.location.pathname
