@@ -12,13 +12,18 @@ export default function SiteFooter() {
       <footer>
         <div className="wrap footer-top">
           <div>
-            <Link href="/" className="footer-brand" aria-label="Alvenn.ai — início">
+            <Link
+              href="/"
+              className="footer-brand"
+              aria-label="Alvenn.ai — início"
+            >
               <Image
                 src="/alvenn-logo.png"
                 width={48}
                 height={48}
                 alt="Logo da Alvenn"
               />
+
               <span>alvenn.ai</span>
             </Link>
 
@@ -32,6 +37,7 @@ export default function SiteFooter() {
           <div className="footer-links">
             <div>
               <small>CONTATO</small>
+
               <a
                 href={INSTAGRAM_URL}
                 target="_blank"
@@ -39,6 +45,9 @@ export default function SiteFooter() {
               >
                 @alvenn.ai
               </a>
+
+              <Link href="/glossario">Glossário</Link>
+
               <a
                 href={WHATSAPP_URL}
                 target="_blank"
@@ -46,15 +55,22 @@ export default function SiteFooter() {
               >
                 (21) 99118-2709
               </a>
-              <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+
+              <a href={`mailto:${CONTACT_EMAIL}`}>
+                {CONTACT_EMAIL}
+              </a>
             </div>
 
             <div>
               <small>LEGAL</small>
+
               <Link href="/politica-de-privacidade">
                 Política de Privacidade
               </Link>
-              <Link href="/politica-de-privacidade">Termos de Uso</Link>
+
+              <Link href="/politica-de-privacidade">
+                Termos de Uso
+              </Link>
             </div>
           </div>
         </div>
