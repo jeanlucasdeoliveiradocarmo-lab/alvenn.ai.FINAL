@@ -1,17 +1,26 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { glossaryEntries, type GlossaryEntry } from './glossary-data';
+import {
+  glossaryEntries,
+  type GlossaryEntry,
+} from './glossary-data';
 import styles from './glossario.module.css';
 
 const WHATSAPP_URL = `https://wa.me/5521991182709?text=${encodeURIComponent(
   'Quero uma solução para o meu negócio',
 )}`;
 
-export default function GlossaryExplorer() {
-  const [selectedEntry, setSelectedEntry] = useState<GlossaryEntry | null>(
-    null,
-  );
+type GlossaryExplorerProps = {
+  initialQuery?: string;
+};
+
+export default function GlossaryExplorer({
+  initialQuery = '',
+}: GlossaryExplorerProps) {
+  const [query, setQuery] = useState(initialQuery);
+  const [selectedEntry, setSelectedEntry] =
+    useState<GlossaryEntry | null>(null);
 
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -21,7 +30,6 @@ export default function GlossaryExplorer() {
     }
 
     const previousOverflow = document.body.style.overflow;
-
     document.body.style.overflow = 'hidden';
     closeButtonRef.current?.focus();
 
@@ -39,22 +47,82 @@ export default function GlossaryExplorer() {
     };
   }, [selectedEntry]);
 
+  const normalizedQuery = query
+    .trim()
+    .toLocaleLowerCase('pt-BR');
+
+  const filteredEntries = normalizedQuery
+    ? glossaryEntries.filter(
+        (entry) =>
+          entry.term
+            .toLocaleLowerCase('pt-BR')
+            .includes(normalizedQuery) ||
+          entry.definition
+            .toLocaleLowerCase('pt-BR')
+            .includes(normalizedQuery),
+      )
+    : glossaryEntries;
+
   return (
     <>
-      <div className={styles.wordGrid} aria-label="Termos do glossário">
-        {glossaryEntries.map((entry, index) => (
-          <button
-            type="button"
-            className={styles.wordButton}
-            key={entry.term}
-            onClick={() => setSelectedEntry(entry)}
-            aria-haspopup="dialog"
-          >
-            <span>{String(index + 1).padStart(2, '0')}</span>
-            {entry.term}
-          </button>
-        ))}
+      <div className={styles.searchArea}>
+        <label htmlFor="glossary-search">
+          Buscar no glossário
+        </label>
+
+        <div className={styles.searchField}>
+          <span aria-hidden="true">⌕</span>
+
+          <input
+            id="glossary-search"
+            type="search"
+            name="busca"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Ex.: SEO, inteligência artificial, vendas"
+            autoComplete="off"
+          />
+        </div>
+
+        <p aria-live="polite">
+          {filteredEntries.length}{' '}
+          {filteredEntries.length === 1
+            ? 'conceito encontrado'
+            : 'conceitos encontrados'}
+        </p>
       </div>
+
+      <div
+        className={styles.wordGrid}
+        aria-label="Termos do glossário"
+      >
+        {filteredEntries.map((entry) => {
+          const originalIndex = glossaryEntries.findIndex(
+            (item) => item.term === entry.term,
+          );
+
+          return (
+            <button
+              type="button"
+              className={styles.wordButton}
+              key={entry.term}
+              onClick={() => setSelectedEntry(entry)}
+              aria-haspopup="dialog"
+            >
+              <span>
+                {String(originalIndex + 1).padStart(2, '0')}
+              </span>
+              {entry.term}
+            </button>
+          );
+        })}
+      </div>
+
+      {filteredEntries.length === 0 ? (
+        <div className={styles.emptyState}>
+          Nenhum conceito corresponde à busca “{query}”.
+        </div>
+      ) : null}
 
       {selectedEntry ? (
         <div
@@ -83,9 +151,13 @@ export default function GlossaryExplorer() {
               ×
             </button>
 
-            <span className={styles.cardEyebrow}>CONCEITO SELECIONADO</span>
+            <span className={styles.cardEyebrow}>
+              CONCEITO SELECIONADO
+            </span>
 
-            <h2 id="glossary-card-title">{selectedEntry.term}</h2>
+            <h2 id="glossary-card-title">
+              {selectedEntry.term}
+            </h2>
 
             <p id="glossary-card-description">
               {selectedEntry.definition}
