@@ -2,7 +2,10 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import SiteFooter from '@/app/components/SiteFooter';
+import JsonLd from '@/app/components/JsonLd';
+import { createDefinedTermSetSchema } from '@/lib/structured-data';
 import GlossaryExplorer from './GlossaryExplorer';
+import { glossaryEntries } from './glossary-data';
 import styles from './glossario.module.css';
 
 const WHATSAPP_URL = `https://wa.me/5521991182709?text=${encodeURIComponent(
@@ -14,21 +17,47 @@ export const metadata: Metadata = {
   description:
     'Conheça 100 conceitos essenciais de vendas, marketing, sites, SEO, tecnologia e negócios no glossário da Alvenn.ai.',
   alternates: {
-    canonical: 'https://alvenn.ai/glossario',
+    canonical: 'https://alvenn.dev.br/glossario',
   },
   openGraph: {
     title: 'Glossário Alvenn.ai — 100 conceitos para o seu negócio',
     description:
       'Explore conceitos essenciais de vendas, marketing, sites, SEO e tecnologia.',
-    url: 'https://alvenn.ai/glossario',
+    url: 'https://alvenn.dev.br/glossario',
   },
 };
 
-export default function GlossaryPage() {
+type GlossaryPageProps = {
+  searchParams: Promise<{
+    busca?: string | string[];
+  }>;
+};
+
+export default async function GlossaryPage({
+  searchParams,
+}: GlossaryPageProps) {
+  const resolvedSearchParams = await searchParams;
+
+  const initialQuery = Array.isArray(resolvedSearchParams.busca)
+    ? resolvedSearchParams.busca[0] ?? ''
+    : resolvedSearchParams.busca ?? '';
+
+  const definedTermSetSchema =
+    createDefinedTermSetSchema(glossaryEntries);
+
   return (
     <>
+      <JsonLd
+        id="defined-term-set-json-ld"
+        data={definedTermSetSchema}
+      />
+
       <header className="island">
-        <Link href="/" className="brand" aria-label="Alvenn.ai — início">
+        <Link
+          href="/"
+          className="brand"
+          aria-label="Alvenn.ai — início"
+        >
           <Image
             src="/alvenn-logo.png"
             width={34}
@@ -36,14 +65,15 @@ export default function GlossaryPage() {
             alt=""
             priority
           />
-
           <span>alvenn.ai</span>
         </Link>
 
         <nav aria-label="Navegação do glossário">
           <Link href="/">Início</Link>
           <Link href="/#sobre">Sobre</Link>
-          <Link href="/politica-de-privacidade">Privacidade</Link>
+          <Link href="/politica-de-privacidade">
+            Privacidade
+          </Link>
         </nav>
 
         <a
@@ -52,7 +82,8 @@ export default function GlossaryPage() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Falar com a Alvenn <span aria-hidden="true">↗</span>
+          Falar com a Alvenn
+          <span aria-hidden="true">↗</span>
         </a>
       </header>
 
@@ -87,12 +118,12 @@ export default function GlossaryPage() {
             <span>SELECIONE UM CONCEITO</span>
 
             <p>
-              Cada termo abre uma explicação objetiva e um caminho direto para
-              conversar com a Alvenn.ai.
+              Cada termo abre uma explicação objetiva e um caminho direto
+              para conversar com a Alvenn.ai.
             </p>
           </div>
 
-          <GlossaryExplorer />
+          <GlossaryExplorer initialQuery={initialQuery} />
         </section>
       </main>
 
