@@ -2,11 +2,15 @@ import type { Metadata, Viewport } from 'next';
 import { Fira_Code } from 'next/font/google';
 import Script from 'next/script';
 import JsonLd from './components/JsonLd';
-import { organizationSchema, websiteSchema } from '@/lib/structured-data';
+import {
+  organizationSchema,
+  websiteSchema,
+} from '@/lib/structured-data';
 import './globals.css';
 
 const SITE_URL = 'https://alvenn.dev.br';
-const SITE_TITLE = 'Alvenn.ai — Sites estratégicos por assinatura';
+const SITE_TITLE =
+  'Alvenn.ai — Sites estratégicos por assinatura';
 const SITE_DESCRIPTION =
   'Sites estratégicos por assinatura com design premium, alta performance e foco em conversão para transformar a presença digital da sua empresa.';
 
@@ -36,7 +40,12 @@ export const metadata: Metadata = {
     'SEO técnico',
     'presença digital',
   ],
-  authors: [{ name: 'Alvenn.ai', url: SITE_URL }],
+  authors: [
+    {
+      name: 'Alvenn.ai',
+      url: SITE_URL,
+    },
+  ],
   creator: 'Alvenn.ai',
   publisher: 'Alvenn.ai',
   category: 'technology',
@@ -101,13 +110,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const googleAnalyticsId = process.env.NEXT_PUBLIC_GA_ID;
+  const googleAnalyticsId =
+    process.env.NEXT_PUBLIC_GA_ID;
 
   return (
     <html lang="pt-BR">
       <body className={firaCode.variable}>
-        <JsonLd id="organization-json-ld" data={organizationSchema} />
-        <JsonLd id="website-json-ld" data={websiteSchema} />
+        <JsonLd
+          id="organization-json-ld"
+          data={organizationSchema}
+        />
+
+        <JsonLd
+          id="website-json-ld"
+          data={websiteSchema}
+        />
 
         {children}
 
@@ -117,15 +134,20 @@ export default function RootLayout({
               src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(
                 googleAnalyticsId,
               )}`}
-              strategy="afterInteractive"
+              strategy="lazyOnload"
             />
 
-            <Script id="google-analytics" strategy="afterInteractive">
+            <Script
+              id="google-analytics"
+              strategy="lazyOnload"
+            >
               {`
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){window.dataLayer.push(arguments);}
                 gtag('js', new Date());
-                gtag('config', ${JSON.stringify(googleAnalyticsId)}, {
+                gtag('config', ${JSON.stringify(
+                  googleAnalyticsId,
+                )}, {
                   anonymize_ip: true,
                   page_path: window.location.pathname
                 });
