@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from 'next';
 import { Fira_Code } from 'next/font/google';
 import Script from 'next/script';
+import JsonLd from './components/JsonLd';
+import { organizationSchema, websiteSchema } from '@/lib/structured-data';
 import './globals.css';
 
-const SITE_URL = 'https://alvenn.ai';
+const SITE_URL = 'https://alvenn.dev.br';
 const SITE_TITLE = 'Alvenn.ai — Sites estratégicos por assinatura';
 const SITE_DESCRIPTION =
   'Sites estratégicos por assinatura com design premium, alta performance e foco em conversão para transformar a presença digital da sua empresa.';
@@ -17,14 +19,11 @@ const firaCode = Fira_Code({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-
   title: {
     default: SITE_TITLE,
     template: '%s | Alvenn.ai',
   },
-
   description: SITE_DESCRIPTION,
-
   keywords: [
     'Alvenn.ai',
     'criação de sites',
@@ -37,26 +36,16 @@ export const metadata: Metadata = {
     'SEO técnico',
     'presença digital',
   ],
-
-  authors: [
-    {
-      name: 'Alvenn.ai',
-      url: SITE_URL,
-    },
-  ],
-
+  authors: [{ name: 'Alvenn.ai', url: SITE_URL }],
   creator: 'Alvenn.ai',
   publisher: 'Alvenn.ai',
   category: 'technology',
-
   alternates: {
     canonical: SITE_URL,
   },
-
   robots: {
     index: true,
     follow: true,
-
     googleBot: {
       index: true,
       follow: true,
@@ -65,7 +54,6 @@ export const metadata: Metadata = {
       'max-video-preview': -1,
     },
   },
-
   openGraph: {
     type: 'website',
     locale: 'pt_BR',
@@ -73,7 +61,6 @@ export const metadata: Metadata = {
     siteName: 'Alvenn.ai',
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-
     images: [
       {
         url: '/alvenn-logo.png',
@@ -83,14 +70,12 @@ export const metadata: Metadata = {
       },
     ],
   },
-
   twitter: {
     card: 'summary_large_image',
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     images: ['/alvenn-logo.png'],
   },
-
   icons: {
     icon: [
       {
@@ -99,7 +84,6 @@ export const metadata: Metadata = {
         sizes: '512x512',
       },
     ],
-
     shortcut: '/icon.png',
     apple: '/icon.png',
   },
@@ -122,6 +106,9 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={firaCode.variable}>
+        <JsonLd id="organization-json-ld" data={organizationSchema} />
+        <JsonLd id="website-json-ld" data={websiteSchema} />
+
         {children}
 
         {googleAnalyticsId ? (
@@ -136,13 +123,8 @@ export default function RootLayout({
             <Script id="google-analytics" strategy="afterInteractive">
               {`
                 window.dataLayer = window.dataLayer || [];
-
-                function gtag() {
-                  window.dataLayer.push(arguments);
-                }
-
+                function gtag(){window.dataLayer.push(arguments);}
                 gtag('js', new Date());
-
                 gtag('config', ${JSON.stringify(googleAnalyticsId)}, {
                   anonymize_ip: true,
                   page_path: window.location.pathname
