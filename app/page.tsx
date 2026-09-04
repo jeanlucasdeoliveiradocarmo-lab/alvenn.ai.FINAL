@@ -1,65 +1,13 @@
-'use client';
-
 import Image from 'next/image';
-import dynamic from 'next/dynamic';
-import {
-  type ComponentType,
-  type CSSProperties,
-  useState,
-} from 'react';
-import ContactSection from './components/ContactSection';
+import DeferredContactSection from './components/DeferredContactSection';
+import DeferredWebGL from './components/DeferredWebGL';
+import FaqAccordion from './components/FaqAccordion';
 import JsonLd from './components/JsonLd';
 import SiteFooter from './components/SiteFooter';
 import {
   faqPageSchema,
   faqSchemaItems,
 } from '@/lib/structured-data';
-
-type ColorBendsProps = {
-  className?: string;
-  style?: CSSProperties;
-  rotation?: number;
-  speed?: number;
-  colors?: string[];
-  transparent?: boolean;
-  autoRotate?: number;
-  scale?: number;
-  frequency?: number;
-  warpStrength?: number;
-  mouseInfluence?: number;
-  parallax?: number;
-  noise?: number;
-  iterations?: number;
-  intensity?: number;
-  bandWidth?: number;
-};
-
-type AuroraProps = {
-  colorStops?: string[];
-  speed?: number;
-  blend?: number;
-  amplitude?: number;
-};
-
-type GradientBlindsProps = {
-  gradientColors?: string[];
-  blindCount?: number;
-};
-
-const ColorBends = dynamic(
-  () => import('./components/ColorBends'),
-  { ssr: false },
-) as ComponentType<ColorBendsProps>;
-
-const Aurora = dynamic(
-  () => import('./components/Aurora'),
-  { ssr: false },
-) as ComponentType<AuroraProps>;
-
-const GradientBlinds = dynamic(
-  () => import('./components/GradientBlinds'),
-  { ssr: false },
-) as ComponentType<GradientBlindsProps>;
 
 const solutions = [
   [
@@ -78,7 +26,7 @@ const solutions = [
     'Performance',
     'Carregamento rápido, código otimizado e a melhor experiência em qualquer dispositivo.',
   ],
-];
+] as const;
 
 const steps = [
   [
@@ -96,7 +44,7 @@ const steps = [
     'No ar',
     'Após sua aprovação, publicamos tudo e sua nova presença começa a trabalhar por você.',
   ],
-];
+] as const;
 
 const faqs = [
   [
@@ -115,22 +63,26 @@ const faqs = [
     'Preciso enviar os textos?',
     'Não necessariamente. Podemos organizar e refinar sua mensagem a partir do briefing para que ela seja clara, estratégica e convincente.',
   ],
-  ...faqSchemaItems.map((item) => [
-    item.question,
-    item.answer,
-  ]),
-];
+  ...faqSchemaItems.map(
+    (item) =>
+      [item.question, item.answer] as const,
+  ),
+] as const;
 
-const WHATSAPP_URL = 'https://wa.me/5521991182709';
+const WHATSAPP_URL =
+  'https://wa.me/5521991182709';
 
-const Arrow = () => <span aria-hidden="true">↗</span>;
+const Arrow = () => (
+  <span aria-hidden="true">↗</span>
+);
 
 export default function Home() {
-  const [openFaq, setOpenFaq] = useState(0);
-
   return (
     <main>
-      <JsonLd id="faq-page-json-ld" data={faqPageSchema} />
+      <JsonLd
+        id="faq-page-json-ld"
+        data={faqPageSchema}
+      />
 
       <header className="island">
         <a
@@ -142,8 +94,8 @@ export default function Home() {
             src="/alvenn-logo.png"
             width={34}
             height={34}
+            sizes="34px"
             alt=""
-            priority
           />
           <span>alvenn.ai</span>
         </a>
@@ -166,23 +118,12 @@ export default function Home() {
         </a>
       </header>
 
-      <section id="inicio" className="hero section-dark">
-        <div className="webgl-layer">
-          <ColorBends
-            colors={['#ff5c7a', '#8a5cff', '#00ffd1']}
-            rotation={46}
-            speed={0.6}
-            scale={0.5}
-            frequency={0.9}
-            warpStrength={1}
-            mouseInfluence={1}
-            noise={0.15}
-            parallax={0.5}
-            iterations={1}
-            intensity={1.5}
-            bandWidth={6}
-            transparent
-          />
+      <section
+        id="inicio"
+        className="hero section-dark"
+      >
+        <div className="webgl-layer hero-webgl-fallback">
+          <DeferredWebGL variant="color-bends" />
         </div>
 
         <div className="hero-shade" />
@@ -193,15 +134,20 @@ export default function Home() {
           </span>
 
           <h1>
-            Sua marca merece uma <em>presença à altura.</em>
+            Sua marca merece uma{' '}
+            <em>presença à altura.</em>
           </h1>
 
           <p>
-            Sites estratégicos, sofisticados e construídos para transformar
-            atenção em oportunidade.
+            Sites estratégicos, sofisticados e
+            construídos para transformar atenção em
+            oportunidade.
           </p>
 
-          <a href="#contato" className="button button-light">
+          <a
+            href="#contato"
+            className="button button-light"
+          >
             Quero meu projeto <Arrow />
           </a>
         </div>
@@ -211,7 +157,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="sobre" className="about section-light">
+      <section
+        id="sobre"
+        className="about section-light"
+      >
         <div className="wrap about-grid">
           <div>
             <span className="eyebrow">
@@ -224,20 +173,25 @@ export default function Home() {
                 alt="Jean Lucas, fundador da Alvenn"
                 fill
                 sizes="(max-width: 800px) 72vw, 360px"
+                loading="lazy"
               />
             </div>
           </div>
 
           <div>
             <p className="lead">
-              Prazer, eu sou <strong>Jean Lucas.</strong> Empreendedor,
-              autodidata e apaixonado por tecnologia.
+              Prazer, eu sou{' '}
+              <strong>Jean Lucas.</strong>{' '}
+              Empreendedor, autodidata e apaixonado por
+              tecnologia.
             </p>
 
             <p className="body-copy">
-              Fundei a Alvenn com um objetivo simples: criar experiências
-              digitais que unam design, estratégia e performance para
-              transformar a forma como empresas se apresentam no digital.
+              Fundei a Alvenn com um objetivo simples:
+              criar experiências digitais que unam
+              design, estratégia e performance para
+              transformar a forma como empresas se
+              apresentam no digital.
             </p>
 
             <div className="signature">
@@ -248,14 +202,12 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="solucao" className="solution section-dark">
-        <div className="webgl-layer aurora">
-          <Aurora
-            colorStops={['#01061b', '#0b42d2', '#55aaff']}
-            blend={0.55}
-            amplitude={1.2}
-            speed={0.55}
-          />
+      <section
+        id="solucao"
+        className="solution section-dark"
+      >
+        <div className="webgl-layer aurora aurora-webgl-fallback">
+          <DeferredWebGL variant="aurora" />
         </div>
 
         <div className="wrap solution-card">
@@ -271,29 +223,32 @@ export default function Home() {
             </h2>
 
             <p>
-              Criamos um ativo digital que trabalha para construir percepção,
-              comunicar valor e gerar novas oportunidades.
+              Criamos um ativo digital que trabalha para
+              construir percepção, comunicar valor e
+              gerar novas oportunidades.
             </p>
           </div>
 
           <div className="feature-grid">
-            {solutions.map(([title, text], index) => (
-              <article key={title}>
-                <span>0{index + 1}</span>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </article>
-            ))}
+            {solutions.map(
+              ([title, text], index) => (
+                <article key={title}>
+                  <span>0{index + 1}</span>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </article>
+              ),
+            )}
           </div>
         </div>
       </section>
 
-      <section id="processo" className="process section-dark">
-        <div className="webgl-layer blinds">
-          <GradientBlinds
-            gradientColors={['#02030a', '#0638ba', '#5ba9ff']}
-            blindCount={10}
-          />
+      <section
+        id="processo"
+        className="process section-dark"
+      >
+        <div className="webgl-layer blinds blinds-webgl-fallback">
+          <DeferredWebGL variant="gradient-blinds" />
         </div>
 
         <div className="process-shade" />
@@ -310,16 +265,18 @@ export default function Home() {
           </h2>
 
           <div className="steps">
-            {steps.map(([number, title, text]) => (
-              <article key={number}>
-                <span>{number}</span>
+            {steps.map(
+              ([number, title, text]) => (
+                <article key={number}>
+                  <span>{number}</span>
 
-                <div>
-                  <h3>{title}</h3>
-                  <p>{text}</p>
-                </div>
-              </article>
-            ))}
+                  <div>
+                    <h3>{title}</h3>
+                    <p>{text}</p>
+                  </div>
+                </article>
+              ),
+            )}
           </div>
         </div>
       </section>
@@ -332,12 +289,14 @@ export default function Home() {
             </span>
 
             <h2>
-              Uma presença digital feita para <em>impressionar.</em>
+              Uma presença digital feita para{' '}
+              <em>impressionar.</em>
             </h2>
 
             <p>
-              Do conceito à publicação, cuidamos de cada detalhe para sua
-              empresa ser vista como merece.
+              Do conceito à publicação, cuidamos de cada
+              detalhe para sua empresa ser vista como
+              merece.
             </p>
           </div>
 
@@ -357,14 +316,20 @@ export default function Home() {
               ))}
             </ul>
 
-            <a href="#contato" className="button button-blue">
+            <a
+              href="#contato"
+              className="button button-blue"
+            >
               Quero começar <Arrow />
             </a>
           </div>
         </div>
       </section>
 
-      <section id="faq" className="faq section-light">
+      <section
+        id="faq"
+        className="faq section-light"
+      >
         <div className="wrap faq-grid">
           <div>
             <span className="eyebrow">
@@ -378,33 +343,11 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="accordion">
-            {faqs.map(([question, answer], index) => (
-              <article
-                className={openFaq === index ? 'open' : ''}
-                key={question}
-              >
-                <button
-                  type="button"
-                  onClick={() =>
-                    setOpenFaq(openFaq === index ? -1 : index)
-                  }
-                  aria-expanded={openFaq === index}
-                >
-                  <span>{question}</span>
-                  <b>{openFaq === index ? '−' : '+'}</b>
-                </button>
-
-                <div className="answer">
-                  <p>{answer}</p>
-                </div>
-              </article>
-            ))}
-          </div>
+          <FaqAccordion items={faqs} />
         </div>
       </section>
 
-      <ContactSection />
+      <DeferredContactSection />
       <SiteFooter />
     </main>
   );
