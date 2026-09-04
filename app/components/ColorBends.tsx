@@ -52,168 +52,323 @@ export default function ColorBends({
   bandWidth = 6,
 }: ColorBendsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+
   const rendererRef = useRef<
     InstanceType<typeof THREE.WebGLRenderer> | null
   >(null);
+
   const animationFrameRef = useRef<number | null>(null);
+
   const materialRef = useRef<
     InstanceType<typeof THREE.ShaderMaterial> | null
   >(null);
-  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+
+  const resizeObserverRef =
+    useRef<ResizeObserver | null>(null);
+
   const rotationRef = useRef<number>(rotation);
   const autoRotateRef = useRef<number>(autoRotate);
-  const pointerTargetRef = useRef<InstanceType<typeof THREE.Vector2>>(
-    new THREE.Vector2(),
-  );
-  const pointerCurrentRef = useRef<InstanceType<typeof THREE.Vector2>>(
-    new THREE.Vector2(),
-  );
+
+  const pointerTargetRef = useRef<
+    InstanceType<typeof THREE.Vector2>
+  >(new THREE.Vector2());
+
+  const pointerCurrentRef = useRef<
+    InstanceType<typeof THREE.Vector2>
+  >(new THREE.Vector2());
 
   useEffect(() => {
-    const el = containerRef.current as HTMLDivElement | null;
-    if (!el) return;
+    const el =
+      containerRef.current as HTMLDivElement | null;
+
+    if (!el) {
+      return;
+    }
 
     const scene = new THREE.Scene();
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+    const camera = new THREE.OrthographicCamera(
+      -1,
+      1,
+      1,
+      -1,
+      0,
+      1,
+    );
+
     const geometry = new THREE.PlaneGeometry(2, 2);
+
     const colorValues = Array.from(
       { length: MAX_COLORS },
       () => new THREE.Vector3(),
     );
+
     const material = new THREE.ShaderMaterial({
       vertexShader,
       fragmentShader,
       uniforms: {
-        uCanvas: { value: new THREE.Vector2(1, 1) },
-        uTime: { value: 0 },
-        uSpeed: { value: speed },
-        uRot: { value: new THREE.Vector2(1, 0) },
-        uColorCount: { value: 0 },
-        uColors: { value: colorValues },
-        uTransparent: { value: transparent ? 1 : 0 },
-        uScale: { value: scale },
-        uFrequency: { value: frequency },
-        uWarpStrength: { value: warpStrength },
-        uPointer: { value: new THREE.Vector2() },
-        uMouseInfluence: { value: mouseInfluence },
-        uParallax: { value: parallax },
-        uNoise: { value: noise },
-        uIterations: { value: iterations },
-        uIntensity: { value: intensity },
-        uBandWidth: { value: bandWidth },
+        uCanvas: {
+          value: new THREE.Vector2(1, 1),
+        },
+        uTime: {
+          value: 0,
+        },
+        uSpeed: {
+          value: speed,
+        },
+        uRot: {
+          value: new THREE.Vector2(1, 0),
+        },
+        uColorCount: {
+          value: 0,
+        },
+        uColors: {
+          value: colorValues,
+        },
+        uTransparent: {
+          value: transparent ? 1 : 0,
+        },
+        uScale: {
+          value: scale,
+        },
+        uFrequency: {
+          value: frequency,
+        },
+        uWarpStrength: {
+          value: warpStrength,
+        },
+        uPointer: {
+          value: new THREE.Vector2(),
+        },
+        uMouseInfluence: {
+          value: mouseInfluence,
+        },
+        uParallax: {
+          value: parallax,
+        },
+        uNoise: {
+          value: noise,
+        },
+        uIterations: {
+          value: iterations,
+        },
+        uIntensity: {
+          value: intensity,
+        },
+        uBandWidth: {
+          value: bandWidth,
+        },
       },
       premultipliedAlpha: true,
       transparent: true,
     });
+
     materialRef.current = material;
-    scene.add(new THREE.Mesh(geometry, material));
+
+    scene.add(
+      new THREE.Mesh(geometry, material),
+    );
 
     const renderer = new THREE.WebGLRenderer({
       antialias: false,
       powerPreference: 'high-performance',
       alpha: true,
     });
+
     rendererRef.current = renderer;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.setClearColor(0, transparent ? 0 : 1);
+
+    renderer.setPixelRatio(
+      Math.min(
+        window.devicePixelRatio || 1,
+        1.25,
+      ),
+    );
+
+    renderer.setClearColor(
+      0,
+      transparent ? 0 : 1,
+    );
+
     Object.assign(renderer.domElement.style, {
       width: '100%',
       height: '100%',
       display: 'block',
     });
+
     el.appendChild(renderer.domElement);
 
     const resize = () => {
       const width = el.clientWidth || 1;
       const height = el.clientHeight || 1;
-      renderer.setSize(width, height, false);
-      material.uniforms.uCanvas.value.set(width, height);
+
+      renderer.setSize(
+        width,
+        height,
+        false,
+      );
+
+      material.uniforms.uCanvas.value.set(
+        width,
+        height,
+      );
     };
+
     resize();
 
     if (typeof ResizeObserver !== 'undefined') {
-      resizeObserverRef.current = new ResizeObserver(resize);
+      resizeObserverRef.current =
+        new ResizeObserver(resize);
+
       resizeObserverRef.current.observe(el);
     } else {
-      window.addEventListener('resize', resize);
+      window.addEventListener(
+        'resize',
+        resize,
+      );
     }
 
     let isIntersecting = false;
     let elapsedTime = 0;
-    let previousFrameTime: number | null = null;
+
+    let previousFrameTime:
+      | number
+      | null = null;
+
+    let previousRenderTime = 0;
+
+    const frameInterval = 1000 / 30;
 
     const loop = (time: number) => {
       animationFrameRef.current = null;
-      if (isIntersecting !== true) return;
+
+      if (isIntersecting !== true) {
+        return;
+      }
+
+      if (
+        time - previousRenderTime <
+        frameInterval
+      ) {
+        animationFrameRef.current =
+          requestAnimationFrame(loop);
+
+        return;
+      }
+
+      previousRenderTime = time;
 
       const deltaTime =
-        previousFrameTime === null ? 0 : (time - previousFrameTime) * 0.001;
+        previousFrameTime === null
+          ? 0
+          : (time - previousFrameTime) *
+            0.001;
+
       previousFrameTime = time;
       elapsedTime += deltaTime;
 
-      material.uniforms.uTime.value = elapsedTime;
+      material.uniforms.uTime.value =
+        elapsedTime;
+
       const radians =
-        (((rotationRef.current % 360) + autoRotateRef.current * elapsedTime) *
+        (((rotationRef.current % 360) +
+          autoRotateRef.current *
+            elapsedTime) *
           Math.PI) /
         180;
-      material.uniforms.uRot.value.set(Math.cos(radians), Math.sin(radians));
+
+      material.uniforms.uRot.value.set(
+        Math.cos(radians),
+        Math.sin(radians),
+      );
+
       pointerCurrentRef.current.lerp(
         pointerTargetRef.current,
         Math.min(1, deltaTime * 8),
       );
-      material.uniforms.uPointer.value.copy(pointerCurrentRef.current);
+
+      material.uniforms.uPointer.value.copy(
+        pointerCurrentRef.current,
+      );
+
       renderer.render(scene, camera);
 
       if (isIntersecting === true) {
-        animationFrameRef.current = requestAnimationFrame(loop);
+        animationFrameRef.current =
+          requestAnimationFrame(loop);
       }
     };
 
     const startAnimation = () => {
-      if (isIntersecting === true && animationFrameRef.current === null) {
+      if (
+        isIntersecting === true &&
+        animationFrameRef.current === null
+      ) {
         previousFrameTime = null;
-        animationFrameRef.current = requestAnimationFrame(loop);
+
+        animationFrameRef.current =
+          requestAnimationFrame(loop);
       }
     };
 
     const stopAnimation = () => {
-      if (animationFrameRef.current !== null) {
-        cancelAnimationFrame(animationFrameRef.current);
+      if (
+        animationFrameRef.current !== null
+      ) {
+        cancelAnimationFrame(
+          animationFrameRef.current,
+        );
+
         animationFrameRef.current = null;
       }
+
       previousFrameTime = null;
+      previousRenderTime = 0;
     };
 
-    const intersectionObserver = new IntersectionObserver(
-      ([entry]) => {
-        isIntersecting = entry?.isIntersecting === true;
+    const intersectionObserver =
+      new IntersectionObserver(
+        ([entry]) => {
+          isIntersecting =
+            entry?.isIntersecting === true;
 
-        if (isIntersecting) {
-          startAnimation();
-        } else {
-          stopAnimation();
-        }
-      },
-      { threshold: 0.01 },
-    );
+          if (isIntersecting) {
+            startAnimation();
+          } else {
+            stopAnimation();
+          }
+        },
+        {
+          threshold: 0.01,
+        },
+      );
+
     intersectionObserver.observe(el);
 
     return () => {
       intersectionObserver.disconnect();
       stopAnimation();
+
       if (resizeObserverRef.current) {
         resizeObserverRef.current.disconnect();
       } else {
-        window.removeEventListener('resize', resize);
+        window.removeEventListener(
+          'resize',
+          resize,
+        );
       }
+
       geometry.dispose();
       material.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
-      if (renderer.domElement.parentNode === el) {
+
+      if (
+        renderer.domElement.parentNode === el
+      ) {
         el.removeChild(renderer.domElement);
       }
+
       materialRef.current = null;
       rendererRef.current = null;
     };
@@ -234,39 +389,81 @@ export default function ColorBends({
   useEffect(() => {
     const material = materialRef.current;
     const renderer = rendererRef.current;
-    if (!material) return;
+
+    if (!material) {
+      return;
+    }
 
     rotationRef.current = rotation;
     autoRotateRef.current = autoRotate;
+
     material.uniforms.uSpeed.value = speed;
     material.uniforms.uScale.value = scale;
-    material.uniforms.uFrequency.value = frequency;
-    material.uniforms.uWarpStrength.value = warpStrength;
-    material.uniforms.uMouseInfluence.value = mouseInfluence;
-    material.uniforms.uParallax.value = parallax;
+
+    material.uniforms.uFrequency.value =
+      frequency;
+
+    material.uniforms.uWarpStrength.value =
+      warpStrength;
+
+    material.uniforms.uMouseInfluence.value =
+      mouseInfluence;
+
+    material.uniforms.uParallax.value =
+      parallax;
+
     material.uniforms.uNoise.value = noise;
-    material.uniforms.uIterations.value = iterations;
-    material.uniforms.uIntensity.value = intensity;
-    material.uniforms.uBandWidth.value = bandWidth;
+
+    material.uniforms.uIterations.value =
+      iterations;
+
+    material.uniforms.uIntensity.value =
+      intensity;
+
+    material.uniforms.uBandWidth.value =
+      bandWidth;
 
     const parsedColors = colors
       .filter(Boolean)
       .slice(0, MAX_COLORS)
-      .map((color) => new THREE.Color(color));
+      .map(
+        (color) =>
+          new THREE.Color(color),
+      );
 
-    for (let index = 0; index < MAX_COLORS; index += 1) {
+    for (
+      let index = 0;
+      index < MAX_COLORS;
+      index += 1
+    ) {
       const color = parsedColors[index];
+
       if (color) {
-        material.uniforms.uColors.value[index].set(color.r, color.g, color.b);
+        material.uniforms.uColors.value[
+          index
+        ].set(
+          color.r,
+          color.g,
+          color.b,
+        );
       } else {
-        material.uniforms.uColors.value[index].set(0, 0, 0);
+        material.uniforms.uColors.value[
+          index
+        ].set(0, 0, 0);
       }
     }
 
-    material.uniforms.uColorCount.value = parsedColors.length;
-    material.uniforms.uTransparent.value = transparent ? 1 : 0;
+    material.uniforms.uColorCount.value =
+      parsedColors.length;
+
+    material.uniforms.uTransparent.value =
+      transparent ? 1 : 0;
+
     if (renderer) {
-      renderer.setClearColor(0, transparent ? 0 : 1);
+      renderer.setClearColor(
+        0,
+        transparent ? 0 : 1,
+      );
     }
   }, [
     rotation,
@@ -286,19 +483,43 @@ export default function ColorBends({
   ]);
 
   useEffect(() => {
-    const el = containerRef.current as HTMLDivElement | null;
-    if (!el) return;
+    const el =
+      containerRef.current as HTMLDivElement | null;
 
-    const move = (event: PointerEvent) => {
-      const bounds = el.getBoundingClientRect();
+    if (!el) {
+      return;
+    }
+
+    const move = (
+      event: PointerEvent,
+    ) => {
+      const bounds =
+        el.getBoundingClientRect();
+
       pointerTargetRef.current.set(
-        ((event.clientX - bounds.left) / (bounds.width || 1)) * 2 - 1,
-        -(((event.clientY - bounds.top) / (bounds.height || 1)) * 2 - 1),
+        ((event.clientX - bounds.left) /
+          (bounds.width || 1)) *
+          2 -
+          1,
+        -(
+          ((event.clientY - bounds.top) /
+            (bounds.height || 1)) *
+            2 -
+          1
+        ),
       );
     };
 
-    el.addEventListener('pointermove', move);
-    return () => el.removeEventListener('pointermove', move);
+    el.addEventListener(
+      'pointermove',
+      move,
+    );
+
+    return () =>
+      el.removeEventListener(
+        'pointermove',
+        move,
+      );
   }, []);
 
   return (
