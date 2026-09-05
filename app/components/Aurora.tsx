@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-} from 'react';
-
+import { useEffect, useRef } from 'react';
 import {
   Color,
   Mesh,
@@ -12,31 +8,11 @@ import {
   Renderer,
   Triangle,
 } from 'ogl';
-
 import './webgl.css';
 
-const V = `#version 300 es
-in vec2 position;
-void main(){
-  gl_Position=vec4(position,0.,1.);
-}`;
+const V = `#version 300 es\nin vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
 
-const F = `#version 300 es
-precision highp float;
-uniform float uTime;
-uniform vec2 uResolution;
-uniform vec3 c0;
-uniform vec3 c1;
-uniform vec3 c2;
-out vec4 fragColor;
-void main(){
-  vec2 uv=gl_FragCoord.xy/uResolution;
-  float wave=.48+.12*sin(uv.x*7.+uTime)+.07*sin(uv.x*13.-uTime*.7);
-  float a=smoothstep(wave-.28,wave+.08,uv.y)*smoothstep(1.,.35,uv.y);
-  vec3 c=mix(c0,c1,uv.x);
-  c=mix(c,c2,.5+.5*sin(uv.x*5.+uTime));
-  fragColor=vec4(c*a,a);
-}`;
+const F = `#version 300 es\nprecision highp float;uniform float uTime;uniform vec2 uResolution;uniform vec3 c0;uniform vec3 c1;uniform vec3 c2;out vec4 fragColor;void main(){vec2 uv=gl_FragCoord.xy/uResolution;float wave=.48+.12*sin(uv.x*7.+uTime)+.07*sin(uv.x*13.-uTime*.7);float a=smoothstep(wave-.28,wave+.08,uv.y)*smoothstep(1.,.35,uv.y);vec3 c=mix(c0,c1,uv.x);c=mix(c,c2,.5+.5*sin(uv.x*5.+uTime));fragColor=vec4(c*a,a);}`;
 
 const DEFAULT_COLOR_STOPS = [
   '#01061b',
@@ -66,11 +42,15 @@ export default function Aurora({
       return;
     }
 
+    const isSmallScreen = window.matchMedia(
+      '(max-width: 768px)',
+    ).matches;
+
     const renderer = new Renderer({
       alpha: true,
       dpr: Math.min(
-        window.devicePixelRatio,
-        1.25,
+        window.devicePixelRatio || 1,
+        isSmallScreen ? 1 : 1.25,
       ),
     });
 
@@ -136,19 +116,23 @@ export default function Aurora({
 
     let isIntersecting = false;
     let elapsedTime = 0;
-
     let previousFrameTime:
       | number
       | null = null;
 
     let previousRenderTime = 0;
 
-    const frameInterval = 1000 / 30;
+    const frameInterval =
+      1000 / (isSmallScreen ? 24 : 30);
+
+    const canRender = () =>
+      isIntersecting &&
+      document.visibilityState === 'visible';
 
     const loop = (time: number) => {
       animationFrameId = null;
 
-      if (isIntersecting !== true) {
+      if (!canRender()) {
         return;
       }
 
@@ -166,8 +150,7 @@ export default function Aurora({
 
       if (previousFrameTime !== null) {
         elapsedTime +=
-          (time - previousFrameTime) *
-          0.001;
+          (time - previousFrameTime) * 0.001;
       }
 
       previousFrameTime = time;
@@ -179,7 +162,7 @@ export default function Aurora({
         scene: mesh,
       });
 
-      if (isIntersecting === true) {
+      if (canRender()) {
         animationFrameId =
           requestAnimationFrame(loop);
       }
@@ -187,7 +170,7 @@ export default function Aurora({
 
     const startAnimation = () => {
       if (
-        isIntersecting === true &&
+        canRender() &&
         animationFrameId === null
       ) {
         previousFrameTime = null;
@@ -229,8 +212,30 @@ export default function Aurora({
 
     intersectionObserver.observe(el);
 
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === 'visible' &&
+        isIntersecting
+      ) {
+        startAnimation();
+      } else {
+        stopAnimation();
+      }
+    };
+
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange,
+    );
+
     return () => {
       intersectionObserver.disconnect();
+
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange,
+      );
+
       stopAnimation();
       resizeObserver.disconnect();
 
