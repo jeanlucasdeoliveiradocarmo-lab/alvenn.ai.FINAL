@@ -1,8 +1,24 @@
 "use client";
 
-import { type CSSProperties, useEffect, useRef } from 'react';
-// @ts-ignore -- Three.js may be installed without its separate declaration package.
-import * as THREE from 'three';
+import {
+  type CSSProperties,
+  useEffect,
+  useRef,
+} from 'react';
+
+import {
+  Color,
+  Mesh,
+  OrthographicCamera,
+  PlaneGeometry,
+  Scene,
+  ShaderMaterial,
+  SRGBColorSpace,
+  Vector2,
+  Vector3,
+  WebGLRenderer,
+} from 'three';
+
 import './ColorBends.css';
 
 const MAX_COLORS = 8;
@@ -52,42 +68,24 @@ export default function ColorBends({
   bandWidth = 6,
 }: ColorBendsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const rendererRef = useRef<
-    InstanceType<typeof THREE.WebGLRenderer> | null
-  >(null);
-
+  const rendererRef = useRef<WebGLRenderer | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-
-  const materialRef = useRef<
-    InstanceType<typeof THREE.ShaderMaterial> | null
-  >(null);
-
-  const resizeObserverRef =
-    useRef<ResizeObserver | null>(null);
-
+  const materialRef = useRef<ShaderMaterial | null>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const rotationRef = useRef<number>(rotation);
   const autoRotateRef = useRef<number>(autoRotate);
-
-  const pointerTargetRef = useRef<
-    InstanceType<typeof THREE.Vector2>
-  >(new THREE.Vector2());
-
-  const pointerCurrentRef = useRef<
-    InstanceType<typeof THREE.Vector2>
-  >(new THREE.Vector2());
+  const pointerTargetRef = useRef<Vector2>(new Vector2());
+  const pointerCurrentRef = useRef<Vector2>(new Vector2());
 
   useEffect(() => {
-    const el =
-      containerRef.current as HTMLDivElement | null;
+    const el = containerRef.current as HTMLDivElement | null;
 
     if (!el) {
       return;
     }
 
-    const scene = new THREE.Scene();
-
-    const camera = new THREE.OrthographicCamera(
+    const scene = new Scene();
+    const camera = new OrthographicCamera(
       -1,
       1,
       1,
@@ -95,20 +93,19 @@ export default function ColorBends({
       0,
       1,
     );
-
-    const geometry = new THREE.PlaneGeometry(2, 2);
+    const geometry = new PlaneGeometry(2, 2);
 
     const colorValues = Array.from(
       { length: MAX_COLORS },
-      () => new THREE.Vector3(),
+      () => new Vector3(),
     );
 
-    const material = new THREE.ShaderMaterial({
+    const material = new ShaderMaterial({
       vertexShader,
       fragmentShader,
       uniforms: {
         uCanvas: {
-          value: new THREE.Vector2(1, 1),
+          value: new Vector2(1, 1),
         },
         uTime: {
           value: 0,
@@ -117,7 +114,7 @@ export default function ColorBends({
           value: speed,
         },
         uRot: {
-          value: new THREE.Vector2(1, 0),
+          value: new Vector2(1, 0),
         },
         uColorCount: {
           value: 0,
@@ -138,7 +135,7 @@ export default function ColorBends({
           value: warpStrength,
         },
         uPointer: {
-          value: new THREE.Vector2(),
+          value: new Vector2(),
         },
         uMouseInfluence: {
           value: mouseInfluence,
@@ -165,30 +162,17 @@ export default function ColorBends({
 
     materialRef.current = material;
 
-    scene.add(
-      new THREE.Mesh(geometry, material),
-    );
+    scene.add(new Mesh(geometry, material));
 
-    const renderer = new THREE.WebGLRenderer({
+    const renderer = new WebGLRenderer({
       antialias: false,
       powerPreference: 'high-performance',
       alpha: true,
     });
 
     rendererRef.current = renderer;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-
-    renderer.setPixelRatio(
-      Math.min(
-        window.devicePixelRatio || 1,
-        1.25,
-      ),
-    );
-
-    renderer.setClearColor(
-      0,
-      transparent ? 0 : 1,
-    );
+    renderer.outputColorSpace = SRGBColorSpace;
+    renderer.setClearColor(0, transparent ? 0 : 1);
 
     Object.assign(renderer.domElement.style, {
       width: '100%',
@@ -202,11 +186,20 @@ export default function ColorBends({
       const width = el.clientWidth || 1;
       const height = el.clientHeight || 1;
 
-      renderer.setSize(
-        width,
-        height,
-        false,
+      const isSmallScreen = window.matchMedia(
+        '(max-width: 768px)',
+      ).matches;
+
+      const maximumDpr = isSmallScreen ? 1 : 1.25;
+
+      renderer.setPixelRatio(
+        Math.min(
+          window.devicePixelRatio || 1,
+          maximumDpr,
+        ),
       );
+
+      renderer.setSize(width, height, false);
 
       material.uniforms.uCanvas.value.set(
         width,
@@ -217,32 +210,32 @@ export default function ColorBends({
     resize();
 
     if (typeof ResizeObserver !== 'undefined') {
-      resizeObserverRef.current =
-        new ResizeObserver(resize);
-
+      resizeObserverRef.current = new ResizeObserver(resize);
       resizeObserverRef.current.observe(el);
     } else {
-      window.addEventListener(
-        'resize',
-        resize,
-      );
+      window.addEventListener('resize', resize);
     }
 
     let isIntersecting = false;
     let elapsedTime = 0;
-
-    let previousFrameTime:
-      | number
-      | null = null;
-
+    let previousFrameTime: number | null = null;
     let previousRenderTime = 0;
 
-    const frameInterval = 1000 / 30;
+    const isSmallScreen = window.matchMedia(
+      '(max-width: 768px)',
+    ).matches;
+
+    const frameInterval =
+      1000 / (isSmallScreen ? 24 : 30);
+
+    const canRender = () =>
+      isIntersecting &&
+      document.visibilityState === 'visible';
 
     const loop = (time: number) => {
       animationFrameRef.current = null;
 
-      if (isIntersecting !== true) {
+      if (!canRender()) {
         return;
       }
 
@@ -261,19 +254,16 @@ export default function ColorBends({
       const deltaTime =
         previousFrameTime === null
           ? 0
-          : (time - previousFrameTime) *
-            0.001;
+          : (time - previousFrameTime) * 0.001;
 
       previousFrameTime = time;
       elapsedTime += deltaTime;
 
-      material.uniforms.uTime.value =
-        elapsedTime;
+      material.uniforms.uTime.value = elapsedTime;
 
       const radians =
         (((rotationRef.current % 360) +
-          autoRotateRef.current *
-            elapsedTime) *
+          autoRotateRef.current * elapsedTime) *
           Math.PI) /
         180;
 
@@ -293,7 +283,7 @@ export default function ColorBends({
 
       renderer.render(scene, camera);
 
-      if (isIntersecting === true) {
+      if (canRender()) {
         animationFrameRef.current =
           requestAnimationFrame(loop);
       }
@@ -301,20 +291,17 @@ export default function ColorBends({
 
     const startAnimation = () => {
       if (
-        isIntersecting === true &&
+        canRender() &&
         animationFrameRef.current === null
       ) {
         previousFrameTime = null;
-
         animationFrameRef.current =
           requestAnimationFrame(loop);
       }
     };
 
     const stopAnimation = () => {
-      if (
-        animationFrameRef.current !== null
-      ) {
+      if (animationFrameRef.current !== null) {
         cancelAnimationFrame(
           animationFrameRef.current,
         );
@@ -345,17 +332,36 @@ export default function ColorBends({
 
     intersectionObserver.observe(el);
 
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === 'visible' &&
+        isIntersecting
+      ) {
+        startAnimation();
+      } else {
+        stopAnimation();
+      }
+    };
+
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange,
+    );
+
     return () => {
       intersectionObserver.disconnect();
+
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange,
+      );
+
       stopAnimation();
 
       if (resizeObserverRef.current) {
         resizeObserverRef.current.disconnect();
       } else {
-        window.removeEventListener(
-          'resize',
-          resize,
-        );
+        window.removeEventListener('resize', resize);
       }
 
       geometry.dispose();
@@ -363,9 +369,7 @@ export default function ColorBends({
       renderer.dispose();
       renderer.forceContextLoss();
 
-      if (
-        renderer.domElement.parentNode === el
-      ) {
+      if (renderer.domElement.parentNode === el) {
         el.removeChild(renderer.domElement);
       }
 
@@ -399,37 +403,20 @@ export default function ColorBends({
 
     material.uniforms.uSpeed.value = speed;
     material.uniforms.uScale.value = scale;
-
-    material.uniforms.uFrequency.value =
-      frequency;
-
-    material.uniforms.uWarpStrength.value =
-      warpStrength;
-
+    material.uniforms.uFrequency.value = frequency;
+    material.uniforms.uWarpStrength.value = warpStrength;
     material.uniforms.uMouseInfluence.value =
       mouseInfluence;
-
-    material.uniforms.uParallax.value =
-      parallax;
-
+    material.uniforms.uParallax.value = parallax;
     material.uniforms.uNoise.value = noise;
-
-    material.uniforms.uIterations.value =
-      iterations;
-
-    material.uniforms.uIntensity.value =
-      intensity;
-
-    material.uniforms.uBandWidth.value =
-      bandWidth;
+    material.uniforms.uIterations.value = iterations;
+    material.uniforms.uIntensity.value = intensity;
+    material.uniforms.uBandWidth.value = bandWidth;
 
     const parsedColors = colors
       .filter(Boolean)
       .slice(0, MAX_COLORS)
-      .map(
-        (color) =>
-          new THREE.Color(color),
-      );
+      .map((color) => new Color(color));
 
     for (
       let index = 0;
@@ -439,17 +426,17 @@ export default function ColorBends({
       const color = parsedColors[index];
 
       if (color) {
-        material.uniforms.uColors.value[
-          index
-        ].set(
+        material.uniforms.uColors.value[index].set(
           color.r,
           color.g,
           color.b,
         );
       } else {
-        material.uniforms.uColors.value[
-          index
-        ].set(0, 0, 0);
+        material.uniforms.uColors.value[index].set(
+          0,
+          0,
+          0,
+        );
       }
     }
 
@@ -490,9 +477,7 @@ export default function ColorBends({
       return;
     }
 
-    const move = (
-      event: PointerEvent,
-    ) => {
+    const move = (event: PointerEvent) => {
       const bounds =
         el.getBoundingClientRect();
 
@@ -513,6 +498,9 @@ export default function ColorBends({
     el.addEventListener(
       'pointermove',
       move,
+      {
+        passive: true,
+      },
     );
 
     return () =>
