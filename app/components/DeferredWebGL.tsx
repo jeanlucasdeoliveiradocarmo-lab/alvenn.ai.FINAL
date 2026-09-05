@@ -1,97 +1,76 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import {
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-const ColorBends = dynamic(
-  () => import('./ColorBends'),
-  {
-    ssr: false,
-  },
-);
+const ColorBends = dynamic(() => import('./ColorBends'), {
+  ssr: false,
+});
 
-const Aurora = dynamic(
-  () => import('./Aurora'),
-  {
-    ssr: false,
-  },
-);
+const Aurora = dynamic(() => import('./Aurora'), {
+  ssr: false,
+});
 
-const GradientBlinds = dynamic(
-  () => import('./GradientBlinds'),
-  {
-    ssr: false,
-  },
-);
+const GradientBlinds = dynamic(() => import('./GradientBlinds'), {
+  ssr: false,
+});
 
-type WebGLVariant =
-  | 'color-bends'
-  | 'aurora'
-  | 'gradient-blinds';
+type WebGLVariant = 'color-bends' | 'aurora' | 'gradient-blinds';
 
 type DeferredWebGLProps = {
   variant: WebGLVariant;
 };
 
-type NavigatorWithPerformanceHints = Navigator & {
-  connection?: {
-    saveData?: boolean;
-  };
-  deviceMemory?: number;
+type WindowWithIdleCallback = Window & {
+  requestIdleCallback?: (
+    callback: IdleRequestCallback,
+    options?: IdleRequestOptions,
+  ) => number;
+  cancelIdleCallback?: (handle: number) => void;
 };
-
-function canRunWebGL() {
-  const navigatorWithHints =
-    navigator as NavigatorWithPerformanceHints;
-
-  if (
-    window.matchMedia(
-      '(prefers-reduced-motion: reduce)',
-    ).matches
-  ) {
-    return false;
-  }
-
-  if (navigatorWithHints.connection?.saveData) {
-    return false;
-  }
-
-  if (
-    navigatorWithHints.deviceMemory &&
-    navigatorWithHints.deviceMemory <= 4
-  ) {
-    return false;
-  }
-
-  if (
-    navigator.hardwareConcurrency &&
-    navigator.hardwareConcurrency <= 4
-  ) {
-    return false;
-  }
-
-  return true;
-}
 
 export default function DeferredWebGL({
   variant,
 }: DeferredWebGLProps) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const [shouldRender, setShouldRender] =
-    useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
 
   useEffect(() => {
     const host = hostRef.current;
 
-    if (!host || !canRunWebGL()) {
+    if (!host) {
       return;
     }
 
-    let delayId: number | null = null;
+    const motionPreference = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    );
+
+    if (motionPreference.matches) {
+      return;
+    }
+
+    const idleWindow = window as WindowWithIdleCallback;
+    let idleCallbackId: number | null = null;
+    let timeoutId: number | null = null;
+
+    const loadRenderer = () => {
+      if (idleWindow.requestIdleCallback) {
+        idleCallbackId = idleWindow.requestIdleCallback(
+          () => setShouldRender(true),
+          {
+            timeout: variant === 'color-bends' ? 900 : 1400,
+          },
+        );
+
+        return;
+      }
+
+      timeoutId = window.setTimeout(
+        () => setShouldRender(true),
+        variant === 'color-bends' ? 250 : 100,
+      );
+    };
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -100,13 +79,7 @@ export default function DeferredWebGL({
         }
 
         observer.disconnect();
-
-        delayId = window.setTimeout(
-          () => {
-            setShouldRender(true);
-          },
-          variant === 'color-bends' ? 1200 : 150,
-        );
+        loadRenderer();
       },
       {
         rootMargin:
@@ -122,8 +95,15 @@ export default function DeferredWebGL({
     return () => {
       observer.disconnect();
 
-      if (delayId !== null) {
-        window.clearTimeout(delayId);
+      if (
+        idleCallbackId !== null &&
+        idleWindow.cancelIdleCallback
+      ) {
+        idleWindow.cancelIdleCallback(idleCallbackId);
+      }
+
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
       }
     };
   }, [variant]);
@@ -134,14 +114,9 @@ export default function DeferredWebGL({
       className="deferred-webgl-host"
       aria-hidden="true"
     >
-      {shouldRender &&
-      variant === 'color-bends' ? (
+      {shouldRender && variant === 'color-bends' ? (
         <ColorBends
-          colors={[
-            '#ff5c7a',
-            '#8a5cff',
-            '#00ffd1',
-          ]}
+          colors={['#ff5c7a', '#8a5cff', '#00ffd1']}
           rotation={46}
           speed={0.6}
           scale={0.5}
@@ -159,25 +134,16 @@ export default function DeferredWebGL({
 
       {shouldRender && variant === 'aurora' ? (
         <Aurora
-          colorStops={[
-            '#01061b',
-            '#0b42d2',
-            '#55aaff',
-          ]}
+          colorStops={['#01061b', '#0b42d2', '#55aaff']}
           blend={0.55}
           amplitude={1.2}
           speed={0.55}
         />
       ) : null}
 
-      {shouldRender &&
-      variant === 'gradient-blinds' ? (
+      {shouldRender && variant === 'gradient-blinds' ? (
         <GradientBlinds
-          gradientColors={[
-            '#02030a',
-            '#0638ba',
-            '#5ba9ff',
-          ]}
+          gradientColors={['#02030a', '#0638ba', '#5ba9ff']}
           blindCount={10}
         />
       ) : null}
