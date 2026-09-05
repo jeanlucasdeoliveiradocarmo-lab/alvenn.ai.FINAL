@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-} from 'react';
-
+import { useEffect, useRef } from 'react';
 import {
   Color,
   Mesh,
@@ -12,36 +8,11 @@ import {
   Renderer,
   Triangle,
 } from 'ogl';
-
 import './webgl.css';
 
-const V = `attribute vec2 position;
-attribute vec2 uv;
-varying vec2 vUv;
-void main(){
-  vUv=uv;
-  gl_Position=vec4(position,0.,1.);
-}`;
+const V = `attribute vec2 position;attribute vec2 uv;varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,0.,1.);}`;
 
-const F = `precision highp float;
-varying vec2 vUv;
-uniform float time;
-uniform vec2 mouse;
-uniform vec3 ca;
-uniform vec3 cb;
-uniform float count;
-float hash(vec2 p){
-  return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);
-}
-void main(){
-  float stripe=fract(vUv.x*count);
-  float edge=smoothstep(.05,.55,stripe);
-  float spot=smoothstep(.65,0.,distance(vUv,mouse));
-  vec3 grad=mix(ca,cb,vUv.x);
-  vec3 col=grad*(.15+edge*.65+spot*.7);
-  col+=(hash(gl_FragCoord.xy+time)-.5)*.05;
-  gl_FragColor=vec4(col,1.);
-}`;
+const F = `precision highp float;varying vec2 vUv;uniform float time;uniform vec2 mouse;uniform vec3 ca;uniform vec3 cb;uniform float count;float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}void main(){float stripe=fract(vUv.x*count);float edge=smoothstep(.05,.55,stripe);float spot=smoothstep(.65,0.,distance(vUv,mouse));vec3 grad=mix(ca,cb,vUv.x);vec3 col=grad*(.15+edge*.65+spot*.7);col+=(hash(gl_FragCoord.xy+time)-.5)*.05;gl_FragColor=vec4(col,1.);}`;
 
 const DEFAULT_GRADIENT_COLORS = [
   '#02030a',
@@ -54,8 +25,7 @@ type GradientBlindsProps = {
 };
 
 export default function GradientBlinds({
-  gradientColors =
-    DEFAULT_GRADIENT_COLORS,
+  gradientColors = DEFAULT_GRADIENT_COLORS,
   blindCount = 10,
 }: GradientBlindsProps) {
   const containerRef =
@@ -69,11 +39,15 @@ export default function GradientBlinds({
       return;
     }
 
+    const isSmallScreen = window.matchMedia(
+      '(max-width: 768px)',
+    ).matches;
+
     const renderer = new Renderer({
       alpha: true,
       dpr: Math.min(
-        window.devicePixelRatio,
-        1.25,
+        window.devicePixelRatio || 1,
+        isSmallScreen ? 1 : 1.25,
       ),
     });
 
@@ -130,9 +104,7 @@ export default function GradientBlinds({
 
     resizeObserver.observe(el);
 
-    const move = (
-      event: PointerEvent,
-    ) => {
+    const move = (event: PointerEvent) => {
       const rect =
         el.getBoundingClientRect();
 
@@ -148,6 +120,9 @@ export default function GradientBlinds({
     el.addEventListener(
       'pointermove',
       move,
+      {
+        passive: true,
+      },
     );
 
     let animationFrameId:
@@ -156,19 +131,23 @@ export default function GradientBlinds({
 
     let isIntersecting = false;
     let elapsedTime = 0;
-
     let previousFrameTime:
       | number
       | null = null;
 
     let previousRenderTime = 0;
 
-    const frameInterval = 1000 / 30;
+    const frameInterval =
+      1000 / (isSmallScreen ? 24 : 30);
+
+    const canRender = () =>
+      isIntersecting &&
+      document.visibilityState === 'visible';
 
     const loop = (time: number) => {
       animationFrameId = null;
 
-      if (isIntersecting !== true) {
+      if (!canRender()) {
         return;
       }
 
@@ -186,8 +165,7 @@ export default function GradientBlinds({
 
       if (previousFrameTime !== null) {
         elapsedTime +=
-          (time - previousFrameTime) *
-          0.001;
+          (time - previousFrameTime) * 0.001;
       }
 
       previousFrameTime = time;
@@ -199,7 +177,7 @@ export default function GradientBlinds({
         scene: mesh,
       });
 
-      if (isIntersecting === true) {
+      if (canRender()) {
         animationFrameId =
           requestAnimationFrame(loop);
       }
@@ -207,7 +185,7 @@ export default function GradientBlinds({
 
     const startAnimation = () => {
       if (
-        isIntersecting === true &&
+        canRender() &&
         animationFrameId === null
       ) {
         previousFrameTime = null;
@@ -249,8 +227,30 @@ export default function GradientBlinds({
 
     intersectionObserver.observe(el);
 
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === 'visible' &&
+        isIntersecting
+      ) {
+        startAnimation();
+      } else {
+        stopAnimation();
+      }
+    };
+
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange,
+    );
+
     return () => {
       intersectionObserver.disconnect();
+
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange,
+      );
+
       stopAnimation();
       resizeObserver.disconnect();
 
